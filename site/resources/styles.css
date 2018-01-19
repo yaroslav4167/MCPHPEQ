@@ -1,0 +1,207 @@
+.qt {
+    margin: auto;
+    height: 100%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+}
+.questBlock {
+    position: relative;
+    display: -webkit-inline-box;
+    display: -ms-inline-flexbox;
+    display: inline-flex;
+    -webkit-box-align: center;
+        -ms-flex-align: center;
+            align-items: center;
+    margin: auto;
+    width: 270px;
+    height: 250px;
+    background: url('qBG.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    -webkit-transition: 1s;
+    transition: 1s;
+}
+.questBlock:hover {
+    /*background: url('qBGhover.png');*/
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    -webkit-transform: rotateY(0deg) scale(1.2);
+            transform: rotateY(0deg) scale(1.2);
+    background-repeat: no-repeat;
+}
+.questBlock>table {
+    margin: auto;
+    padding: 0 40px;
+    font-size: 14px;
+    -webkit-box-align: center;
+            -ms-flex-align: center;
+                    align-items: center;
+    font-family: 'PT Sans', serif;
+}
+.questBlock>table td {width: 200px;}
+
+.qenable {
+    background: url('qButton.png') 0px 79px;
+    background-size: 100% auto;
+}
+
+.qenable:active {
+    background: url('qButton-hov.png') 0px 79px;
+    background-size: 100% auto;
+    transition: 0.1s;
+}
+
+.qenable:focus {
+    outline: none;
+}
+
+.qButton {
+    position: absolute;
+    border: none;
+    margin: 53px 0px 0px -270px;
+    width: 270px;
+    height: 60px;
+}
+
+.qdisabled {
+    background: url('qButton-disabled.png') 0px 79px;
+    background-size: 100% auto;
+    cursor: not-allowed;
+}
+
+body {
+    margin: 0;
+    background: url('bg.png') 0 10% fixed;
+    background-position: center center;
+    /*background-image: url('bg.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+	background-attachment: fixed;*/
+    min-width: 800px;
+}
+body:after {
+    content:
+        url('qButton-disabled.png')
+        url('qButton-hov.png')
+        url('qButton.png')
+    ;
+    display: none;
+}
+.window {
+    z-index: -1;
+    position: absolute;
+    width: 14%;
+    top: 29%;
+    left: 7%;
+}
+.bookshelf {
+    position: fixed;
+    z-index: -1;
+    right: 0;
+    bottom: 0;
+    width: 20%;
+}
+.quests {
+    margin: auto;
+}
+.centerQuests {
+    text-align: center;
+}
+.topbar {
+    position: relative;
+    width: 100%;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.5);
+    font-size: 35px;
+    font-family: 'PT Sans', serif;
+    text-shadow: 0px 1px 2px black;
+	z-index: 10;
+}
+.topbar>a {
+    padding-left: 10px;
+    text-decoration: none;
+    color: #f7f7f7;
+}
+.topbar>table {
+    position: absolute;
+    color: #ffffff;
+    text-shadow: 2px 2px 0px #000;
+    right: 0;
+    top: 0;
+    background: rgba(0, 0, 0, 0.41);
+    height: 100%;
+}
+.topTable {
+    margin-top: 25px;
+    text-align: center;
+    border-spacing: 0;
+    color: white;
+    font-family: 'PT Sans', serif;
+    text-shadow: 0px 1px 1px black;
+    font-size: 20px;
+    font-weight: bold;
+	box-shadow: 4px 2px 60px #000;
+}
+.topTable .tr1 {
+    background: rgba(216, 216, 216, 0.75);
+}
+.topTable .tr2 {
+    background: rgba(128, 128, 128, 0.75);
+}
+.topTable td {
+    border-right: 1px solid #e6e6e6;
+    border-bottom: 1px solid #e6e6e6;
+}
+.topTable td:last-child {
+    border-right: none;
+}
+.topTable .avatar {
+    border-right: none;
+}
+.topTable .avatar > img {
+    border-radius: 3px;
+    width: 25px;
+    height: 25px;
+    vertical-align: middle;
+    image-rendering: optimizeSpeed;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -o-crisp-edges
+      image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    image-rendering: optimize-contrast;
+      -ms-interpolation-mode: nearest-neighbor;
+}
+.topTable .position {
+    width: 80px;
+}
+.topTable .username {
+    width: 500px;
+	text-align: start;
+}
+.topTable .position-1 {
+	background: rgba(59, 188, 70, 0.95);
+}
+.topTable .position-2 {
+	background: rgba(132, 232, 255, 0.95);
+}
+.topTable .position-3 {
+	background: rgba(255, 215, 0, 0.95);
+}
+
+.l_login {
+    border: 1px solid #ccc;
+    border-radius: 5px 0 0 5px;
+    padding: 5px;
+}
+.l_pass {
+    border: 1px solid #ccc;
+    border-left: none;
+    padding: 5px;
+}
+.l_button {
+    border: 1px solid #ccc;
+    border-radius: 0 5px 5px 0;
+    border-left: none;
+    padding: 5px;
+}
