@@ -106,19 +106,37 @@ function getUsername(){//Получение никнейма пользоват�
 	mysqli_free_result($query);
 	return $res[$db_user_name];
 }
-function getStat($stat, $username){//Получение одного параметра со всех серверов (сервер1 + сервер2 ...)
-	global $server_array;
+function getStat($statKEY, $username){//Получение одного параметра со всех серверов (сервер1 + сервер2 ...)
+	global $server_array, $enableWEB_API, $server_array_WAPI, $quests;
 	$uuid = getUUID($username);
 	$result = 0;
-	foreach ($server_array as $dirStat) {
-		$f = $dirStat . $uuid . '.json';
-		if(file_exists($f)){
-			$fileContent = file_get_contents($f);
-			$js = json_decode($fileContent, true);
-			if(isset($js[$stat])) {
-				if(strpos($stat, 'mineBlock') !== false && isset($js[str_replace('mineBlock', 'useItem', $stat)])) {
-					$result += $js[$stat] - $js[str_replace('mineBlock', 'useItem', $stat)];//Разница между поставленными и добытыми блоками (AntiCheat)
-				} else {
+
+	$userOnlineServers = array();
+	if($enableWEB_API) {//Работаем с WEB-API	
+		foreach($server_array_WAPI as $key => $serverWAPI) {
+			$url = $serverWAPI['apiurl'] . '/api/player/' . $uuid . '?=key=' . $serverWAPI['key'];
+			$userStat = file_get_contents($url);
+			if(!empty($userStat)){
+				$userJsonStat = json_decode($userStat);
+				if(array_key_exists('player', $userJsonStat)){
+					if(array_key_exists('statistics', $userJsonStat['player'])){
+						$userOnlineServers[] = $key;
+						$webAPIStat = $quests[$statKEY]['jsNameWAPI'];//Т.к. в WEB-API другие названия переменных, ищем в конфигурации правильные.
+						$result += $userJsonStat['player']['statistics'][$webAPIStat];
+					}
+				}
+			}
+		}
+	}
+
+	foreach ($server_array as $key => $dirStat) {
+		if(!in_array($key, $userOnlineServers)){
+			$f = $dirStat[0] . $uuid . '.json';
+			if(file_exists($f)){
+				$fileContent = file_get_contents($f);
+				$js = json_decode($fileContent, true);
+				$stat = $dirStat[1]?$quests[$statKEY]['jsNameV2']:$quests[$statKEY]['jsNameV1'];//Поддержка старых верий статистики
+				if(isset($js[$stat])) {
 					$result += $js[$stat];
 				}
 			}
@@ -135,7 +153,7 @@ function questsDisplay() {
 	$query = mysqli_query($mysqli, $q)or DIE('Ашипка MySQL<br>' . $q);
 	while($res = mysqli_fetch_array($query)) {
 		$js = unserialize($res['quest']);
-		$statV = getStat($js['jsName'], $username);
+		$statV = getStat($js['qkey'], $username);
 		$ammount = $statV - $res['value'];
 		if($ammount >= $res['ammount']){
 			$ammount = $res['ammount'];
@@ -180,7 +198,7 @@ function getBonuces($id) {//Сдача квеста/получение бону�
 	$res = mysqli_fetch_array($query);
 	$today = date("d.m.Y");
 	$js = unserialize($res['quest']);
-	$statV = getStat($js['jsName'], $username);
+	$statV = getStat($js['qkey'], $username);
 	$ammount = $statV - $res['value'];
 	if($ammount >= $res['ammount'] && isset($res['ammount'])){
 		$q = "INSERT INTO `".$db_pref."_everydayQuests_history`(`user`, `info`, `date`) VALUES ('".$username."','".$res['quest']."','".$today."')";
@@ -228,19 +246,20 @@ function questsUpdate() {
 		}
 		for ($i=$numR; $i <= $questsLimit; $i++) { 
 			$t++;
-			foreach ($quests as $questsvalue) {	
+			foreach ($quests as $key => $questsvalue) {	
 				$t++;
 				$coincidence = false;
 				foreach($resS as $resvalue) {
 					$t++;
-					if(stristr($resvalue['quest'], $questsvalue['jsName']) != ''){
+					if(stristr($resvalue['quest'], $key) != ''){
 						$coincidence = true;
 						break;
 					}
 				}
 				if(!$coincidence && $numR < $questsLimit){
 					$numR++;
-					$q = "INSERT INTO `".$db_pref."_everydayQuests`(`user`, `user_id`, `uuid`, `quest`, `ammount`, `value`) VALUES ('".$username."','".$id."','".getUUID($username)."','".serialize($questsvalue)."',".$questsvalue['ammount'].",".getStat($questsvalue['jsName'], $username).")";
+					$questsvalue['qkey'] = $key;
+					$q = "INSERT INTO `".$db_pref."_everydayQuests`(`user`, `user_id`, `uuid`, `quest`, `ammount`, `value`) VALUES ('".$username."','".$id."','".getUUID($username)."','".serialize($questsvalue)."',".$questsvalue['ammount'].",".getStat($key, $username).")";
 					mysqli_query($mysqli, $q)or DIE('Ашипка MySQL<br>' . $q);
 				}
 			}
