@@ -224,7 +224,8 @@ function getBonuces($id) {//Сдача квеста/получение бону�
 function questsUpdate() {
 	global $quests, $dle_session_fix, $mysqli, $questsLimit, $db_pref;
 	$today = date("d.m.Y");
-	shuffle($quests);//Перемешиваем массив
+	$arr_keys = array_keys($quests); //Получаем имена (Ключи) массивов в массиве
+	shuffle($arr_keys);//Перемешиваем массив
 	$t = 0;
 	$id = getUserID();
 	$username = getUsername();
@@ -246,7 +247,7 @@ function questsUpdate() {
 		}
 		for ($i=$numR; $i <= $questsLimit; $i++) { 
 			$t++;
-			foreach ($quests as $key => $questsvalue) {	
+			foreach ($arr_keys as $key => $array_key) {
 				$t++;
 				$coincidence = false;
 				foreach($resS as $resvalue) {
@@ -258,8 +259,8 @@ function questsUpdate() {
 				}
 				if(!$coincidence && $numR < $questsLimit){
 					$numR++;
-					$questsvalue['qkey'] = $key;
-					$q = "INSERT INTO `".$db_pref."_everydayQuests`(`user`, `user_id`, `uuid`, `quest`, `ammount`, `value`) VALUES ('".$username."','".$id."','".getUUID($username)."','".serialize($questsvalue)."',".$questsvalue['ammount'].",".getStat($key, $username).")";
+					$quests[$array_key]['qkey'] = $array_key;
+					$q = "INSERT INTO `".$db_pref."_everydayQuests`(`user`, `user_id`, `uuid`, `quest`, `ammount`, `value`) VALUES ('".$username."','".$id."','".getUUID($username)."','".serialize($quests[$array_key])."',".$quests[$array_key]['ammount'].",".getStat($array_key, $username).")";
 					mysqli_query($mysqli, $q)or DIE('Ашипка MySQL<br>' . $q);
 				}
 			}
