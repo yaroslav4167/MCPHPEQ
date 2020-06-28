@@ -1,7 +1,7 @@
 <?php
 /*
-	Скрипт для генерации аватарок "на-лету" из скинов Minecraft. (c) synthetic.
-	Пример запроса: http://mysite.ru/getavatar.php?login=synthetic
+    Скрипт для генерации аватарок "на-лету" из скинов Minecraft. (c) synthetic.
+    Пример запроса: http://mysite.ru/getavatar.php?login=synthetic
 */
 
 // ========== Настройки ===========
@@ -18,31 +18,32 @@ $login = filter_input(INPUT_GET, 'user', FILTER_SANITIZE_STRING, FILTER_FLAG_STR
 $filename = $skins_path.$login.'.png';
 
 if (!file_exists($filename)) {
-	if(searchUserFile($login.".png")) {//Yaroslavik add parameter
-    $filename = $skins_path.$cachedFile;
-  } else {
-    $filename = $skins_path.$default_skin;
-    if (!file_exists($filename)) {
-      http_response_code(404);
-      exit;
-    }
-  }
-}
-
-function searchUserFile($user = '') { //Yaroslavik's function (Search no capsFile)
-  global $skins_path, $cachedFile;
-  if ($handle = opendir($skins_path)) {
-    while (false !== ($entry = readdir($handle))) {
-        if ($entry != "." && $entry != "..") {
-            if(strtoupper($entry) == strtoupper($user)) {
-              $cachedFile = $entry;
-              return true;
-            }
+    if (searchUserFile($login.".png")) {//Yaroslavik add parameter
+        $filename = $skins_path.$cachedFile;
+    } else {
+        $filename = $skins_path.$default_skin;
+        if (!file_exists($filename)) {
+            http_response_code(404);
+            exit;
         }
     }
-    closedir($handle);
-  }
-  return false;
+}
+
+function searchUserFile($user = '')
+{ //Yaroslavik's function (Search no capsFile)
+    global $skins_path, $cachedFile;
+    if ($handle = opendir($skins_path)) {
+        while (false !== ($entry = readdir($handle))) {
+            if ($entry != "." && $entry != "..") {
+                if (strtoupper($entry) == strtoupper($user)) {
+                    $cachedFile = $entry;
+                    return true;
+                }
+            }
+        }
+        closedir($handle);
+    }
+    return false;
 }
 
 header('Content-type: image/png');
@@ -53,25 +54,25 @@ $skin = imagecreatefrompng($filename);
 
 // Если некорректный png файл
 if ($skin === false) {
-	http_response_code(404);
-	exit;
+    http_response_code(404);
+    exit;
 }
 
-$width = imagesx ($skin);
-$height = imagesy ($skin);
+$width = imagesx($skin);
+$height = imagesy($skin);
 
 // Проверяем размеры скина на корректность
 if ($width < 64 || $height != $width && $height * 2 != $width) {
-	http_response_code(404);
-	exit;
+    http_response_code(404);
+    exit;
 }
 
 // Проверяем, содержит ли скин прозрачные пиксели
 $transparency = false;
-for($i = 0; $i < $width; $i++) {
-    for($j = 0; $j < $height; $j++) {
+for ($i = 0; $i < $width; $i++) {
+    for ($j = 0; $j < $height; $j++) {
         $rgba = imagecolorat($skin, $i, $j);
-        if(($rgba & 0x7F000000) >> 24) {
+        if (($rgba & 0x7F000000) >> 24) {
             $transparency = true;
             break 2;
         }
@@ -86,12 +87,11 @@ $img = imagecreatetruecolor($size_dst, $size_dst);
 imagefill($img, 0, 0, imagecolorallocate($img, 0, 0, 0));
 
 // Копируем лицо
-imagecopyresized ($img, $skin, 0, 0, $size_src, $size_src, $size_dst, $size_dst, $size_src, $size_src);
+imagecopyresized($img, $skin, 0, 0, $size_src, $size_src, $size_dst, $size_dst, $size_src, $size_src);
 // Если прозрачность поддерживается, накладываем шлем
-if ($transparency)
-	imagecopyresized ($img, $skin, 0, 0, $size_src * 5, $size_src, $size_dst, $size_dst, $size_src, $size_src);
+if ($transparency) {
+    imagecopyresized($img, $skin, 0, 0, $size_src * 5, $size_src, $size_dst, $size_dst, $size_src, $size_src);
+}
 
 imagepng($img);
 imagedestroy($img);
-
-?>
