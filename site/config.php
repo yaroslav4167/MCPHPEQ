@@ -17,10 +17,10 @@ $db_pref  = 'eq'; //Префикс таблиц ЕЗ
 /*Подключение к движку*/
 $db_user_table = 'dle_users';	//Таблица с пользователями
 $db_user_name = 'name'; 		//Колонка с именем пользователя
-$db_user_pass = 'password';		//Колонка с зашированным (или нет) паролем
+$db_user_pass = 'password';		//Колонка с зашифрованным (или нет) паролем
 $db_user_id = 'user_id';		//Колонка с паролем пользователя (либо с тем значением, которое необходимо проверять)
-$db_user_uuid = 'uuid';			//Колонка с универсальным индификатором пользователя
-$db_user_assoc = $_SESSION['dle_user_id']; //Параметер, по которому происходит сверка
+$db_user_uuid = 'uuid';			//Колонка с универсальным идентификатором пользователя
+$db_user_assoc = $_SESSION['dle_user_id']; //Параметр, по которому происходит сверка
 $dle_session_fix = true; 		//Фикс сессий (ТОЛЬКО ДЛЯ DLE!)
 
 /*Настройка аватаров*/
@@ -30,7 +30,7 @@ $variable_size = true; // Возвращать ли разные размеры 
 
 /*Основная конфигурация*/
 $server_array = array(
-	1 => array('/home/Public/HiTech/world/stats/', false), 
+	1 => array('/home/Public/HiTech/world/stats/', false),
 	2 => array('/home/Public/SkyTech/world/stats/', false),
 	3 => array('/home/Public/MagicRPG/world/stats/', false) );//Массив путей к папкам серверов с статистикой игроков (Слэш в конце - обязателен!), второй параметр - версия сервера >= 1.8
 
@@ -46,8 +46,8 @@ $db_bonuce_table = 'dle_users';		//Таблица с бонус-валютой
 $db_bonuce_column = 'bonusMoney';	//Колонка с бонусами
 $db_real_column = 'money';			//Колонка с  реальной валютой
 $db_assoc_bonuce = 'user_id';		//Ассоциация бонусов по данному параметру
-$db_assoc_value = @$_SESSION['dle_user_id'];//Параметер, по которому происходит сверка
-$title = 'LogicQuests';//Что отображаеться в названии заголовка
+$db_assoc_value = @$_SESSION['dle_user_id'];//Параметр, по которому происходит сверка
+$title = 'LogicQuests';//Что отображается в названии заголовка
 $description = 'Ежедневыне квесты. Выполняй, и получай бонусы!'; //Описание для индексаторов
 $quests = array(
 	'q1' => array(
@@ -67,7 +67,7 @@ $quests = array(
 		'jsNameWAPI' => 'mine_block.diamond_ore',
 		'bonuceAmmount' => '15'),
 	'q3' => array(
-		'name' => 'Истребляем нечесть!',
+		'name' => 'Истребляем нечисть!',
 		'description' => 'Убей ифритов!',
 		'ammount' => '15',
 		'jsNameV1' => 'stat.killEntity.Blaze',
@@ -163,7 +163,7 @@ $quests = array(
 		'jsNameV1' => 'stat.mineBlock.103',
 		'bonuceAmmount' => '10'),
   'q19' => array(
-		'name' => 'Контр-террорист',
+		'name' => 'Контр террорист',
 		'description' => 'Убей крипперов',
 		'ammount' => '10',
 		'jsNameV1' => 'stat.killEntity.Creeper',
@@ -208,5 +208,5 @@ CREATE TABLE IF NOT EXISTS `".$db_pref."_top` (
   `num_q` int(12) NOT NULL,
   `num_money` int(15) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=0 ;";//Стандартный запрос к БД (Выполняеться только один раз)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=0 ;";//Стандартный запрос к БД (Выполняется только один раз)
 ?>
