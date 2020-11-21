@@ -142,7 +142,7 @@ function getStat($statKEY, $username)
     foreach ($server_array as $key => $dirStat) {
         if (!in_array($key, $userOnlineServers)) {
             $f = $dirStat[0] . $uuid . '.json';
-            if (file_exists($f)) {
+            if(file_exists($f) || UR_exists($f)){ //Путь это файл или URL? Существует ли нужный нам файл?
                 $fileContent = file_get_contents($f);
                 $js = json_decode($fileContent, true);
                 $stat = $dirStat[1]?$quests[$statKEY]['jsNameV2']:$quests[$statKEY]['jsNameV1'];//Поддержка старых верий статистики
@@ -153,6 +153,10 @@ function getStat($statKEY, $username)
         }
     }
     return $result;
+}
+function UR_exists($url){
+    $headers=get_headers($url);
+    return stripos($headers[0],"200 OK")?true:false;
 }
 function questsDisplay()
 {
