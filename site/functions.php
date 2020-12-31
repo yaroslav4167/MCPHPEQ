@@ -25,6 +25,7 @@ if($db_user_assoc != ''){
 if (@$_GET['pickq'] != '') {
     getBonuces($_GET['pickq']);
 }
+$cached_stats = array();
 
 function userRule()
 {//Проверка прав доступа
@@ -139,19 +140,27 @@ function getStat($statKEY, $username)
         }
     }
 
-    foreach ($server_array as $key => $dirStat) {
-        if (!in_array($key, $userOnlineServers)) {
-            $f = $dirStat[0] . $uuid . '.json';
-            if(file_exists($f) || UR_exists($f)){ //Путь это файл или URL? Существует ли нужный нам файл?
-                $fileContent = file_get_contents($f);
-                $js = json_decode($fileContent, true);
-                $stat = $dirStat[1]?$quests[$statKEY]['jsNameV2']:$quests[$statKEY]['jsNameV1'];//Поддержка старых верий статистики
-                if (isset($js[$stat])) {
-                    $result += $js[$stat];
-                }
-            }
-        }
-    }
+    //Кеширование всех файлов со статистикой из серверов
+	global $cached_stats;
+	if (count($cached_stats) == 0) {
+		foreach ($server_array as $key => $dirStat) {
+			if(!in_array($key, $userOnlineServers)){
+				$f = $dirStat[0] . $uuid . '.json';
+				if(file_exists($f) || UR_exists($f)){ //Путь это файл или URL? Существует ли нужный нам файл?
+					$fileContent = file_get_contents($f);
+					$js = json_decode($fileContent, true);
+					$cached_stats[] = $js;
+				}
+			}
+		}
+	}
+	
+	foreach ($cached_stats as $server_stat) {
+		$stat = $dirStat[1]?$quests[$statKEY]['jsNameV2']:$quests[$statKEY]['jsNameV1'];//Поддержка старых верий статистики
+		if(isset($server_stat[$stat])) {
+			$result += $server_stat[$stat];
+		}
+	}
     return $result;
 }
 function UR_exists($url){
