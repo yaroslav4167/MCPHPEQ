@@ -41,17 +41,10 @@ function userRule()
     return false;
 }
 function dleFixCookie()
-{//Фикс недействительной сессии при длительном нахождении на странице.
-    global $mysqli, $db_user_pass, $db_user_table, $db_user_id;
-    if ($_COOKIE['dle_user_id'] != '' && $_COOKIE['dle_password'] != '') {
-        $id = mysqli_real_escape_string($mysqli, $_COOKIE['dle_user_id']);
-        $pass = mysqli_real_escape_string($mysqli, $_COOKIE['dle_password']);
-        $q = "SELECT `".$db_user_pass."` FROM `".$db_user_table."` WHERE `".$db_user_id."`=".$id."";
-        $query = mysqli_query($mysqli, $q);
-        $res = mysqli_fetch_array($query);
-        if ($res[$db_user_pass] == md5($pass)) {
-            $_SESSION['dle_user_id'] = $id;//DLE FIX AUTHORIZATION
-            mysqli_free_result($query);
+{//Фикс недействительной сессии при длительном нахождении на странице. (Не работает на новых версиях)
+    if (@$_COOKIE['dle_user_id'] != '' && @$_COOKIE['dle_password'] != '') {
+        if (@$_SESSION['dle_password'] == $_COOKIE['dle_password']) {
+            //$_SESSION['dle_user_id'] = $_COOKIE['dle_user_id'];//DLE FIX AUTHORIZATION
             return true;
         } else {
             error_log("Замечена попытка подмены данных! id:" . $_COOKIE['dle_user_id'] . " pass:" . $_COOKIE['dle_password'], 0);
@@ -63,7 +56,7 @@ function dleFixCookie()
 function getUUID($username)
 {//Получение UUID пользователя
     global $mysqli, $db_user_table, $db_user_name, $db_user_uuid;
-    $username = mysqli_real_escape_string($mysqli, htmlspecialchars($username));
+    $username = mysqli_real_escape_string($mysqli, $username);
     $q = "SELECT `".$db_user_uuid."` FROM `".$db_user_table."` WHERE `".$db_user_name."` = '".$username."'";
     $query = mysqli_query($mysqli, $q);
     $res = mysqli_fetch_array($query);
@@ -78,8 +71,8 @@ function getUserID()
         return $db_user_assoc;
     } else {
         if ($dle_session_fix && dleFixCookie()) {
-            if ($_COOKIE['dle_user_id'] != '') {
-                return (int)$_COOKIE['dle_user_id'];
+            if (@$_SESSION['dle_user_id'] != '') {
+                return (int)$_SESSION['dle_user_id'];
             }
 
             return;
@@ -106,34 +99,52 @@ function BonusMoneyAmount()
     mysqli_free_result($query);
     return round($result[$db_bonuce_column], 2);
 }
-function getUsername()
+function getUsername($uuid = '')
 {//Получение никнейма пользователя
-    global $db_user_table, $db_user_name, $db_user_id, $db_user_assoc, $mysqli, $dle_session_fix;
-    $assoc = getUserID();
-    $q = "SELECT * FROM ".$db_user_table." WHERE ".$db_user_id." = '".$assoc."' LIMIT 1";
-    $query = mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
-    $res = mysqli_fetch_array($query);
-    mysqli_free_result($query);
-    return $res[$db_user_name];
+    global $db_user_table, $db_user_name, $db_user_id, $db_user_uuid, $db_user_assoc, $mysqli, $dle_session_fix;
+    if ($uuid == '') {
+        $assoc = getUserID();
+        $q = "SELECT * FROM ".$db_user_table." WHERE ".$db_user_id." = '".$assoc."' LIMIT 1";
+        $query = mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
+        $res = mysqli_fetch_array($query);
+        mysqli_free_result($query);
+        return $res[$db_user_name];
+    } else {
+        $q = "SELECT * FROM ".$db_user_table." WHERE ".$db_user_uuid." = '".$uuid."' LIMIT 1";
+        $query = mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
+        $res = mysqli_fetch_array($query);
+        mysqli_free_result($query);
+        return $res[$db_user_name];
+    }
 }
 function getStat($statKEY, $username)
 {//Получение одного параметра со всех серверов (сервер1 + сервер2 ...)
     global $server_array, $enableWEB_API, $server_array_WAPI, $quests;
+
+    if (!isset($statKEY)) {
+        return 0;
+    }
+
     $uuid = getUUID($username);
     $result = 0;
 
     $userOnlineServers = array();
     if ($enableWEB_API) {//Работаем с WEB-API
         foreach ($server_array_WAPI as $key => $serverWAPI) {
-            $url = $serverWAPI['apiurl'] . '/api/player/' . $uuid . '?=key=' . $serverWAPI['key'];
+            $url = $serverWAPI['apiurl'] . 'player/' . $uuid . '?key=' . $serverWAPI['key'];
             $userStat = file_get_contents($url);
             if (!empty($userStat)) {
-                $userJsonStat = json_decode($userStat);
-                if (array_key_exists('player', $userJsonStat)) {
-                    if (array_key_exists('statistics', $userJsonStat['player'])) {
+                $userJsonStat = json_decode($userStat, true);
+                if (array_key_exists('online', $userJsonStat) && ($userJsonStat['online'] == true)) {
+                    if (array_key_exists('statistics', $userJsonStat)) {
                         $userOnlineServers[] = $key;
                         $webAPIStat = $quests[$statKEY]['jsNameWAPI'];//Т.к. в WEB-API другие названия переменных, ищем в конфигурации правильные.
-                        $result += $userJsonStat['player']['statistics'][$webAPIStat];
+                        //$result += $userJsonStat['statistics'][$webAPIStat];
+                        foreach ($userJsonStat['statistics'] as $stat) {
+                            if ($stat['stat'] == $webAPIStat) {
+                                $result += $stat['value'];
+                            }
+                        }
                     }
                 }
             }
@@ -141,39 +152,52 @@ function getStat($statKEY, $username)
     }
 
     //Кеширование всех файлов со статистикой из серверов
-	global $cached_stats;
-	if (count($cached_stats) == 0) {
-		foreach ($server_array as $key => $dirStat) {
-			if(!in_array($key, $userOnlineServers)){
-				$f = $dirStat[0] . $uuid . '.json';
-				if(file_exists($f) || UR_exists($f)){ //Путь это файл или URL? Существует ли нужный нам файл?
-					$fileContent = file_get_contents($f);
-					$js = json_decode($fileContent, true);
-					$cached_stats[] = $js;
-				}
-			}
-		}
-	}
-	
-	foreach ($cached_stats as $server_stat) {
-		$stat = $dirStat[1]?$quests[$statKEY]['jsNameV2']:$quests[$statKEY]['jsNameV1'];//Поддержка старых верий статистики
-		if(isset($server_stat[$stat])) {
-			$result += $server_stat[$stat];
-		}
-	}
+    global $cached_stats;
+    if (!is_array($cached_stats)) {
+        $cached_stats = array();
+    }
+
+    if (count($cached_stats) == 0) {
+        foreach ($server_array as $key => $dirStat) {
+            if (!in_array($key, $userOnlineServers)) {
+                $f = $dirStat[0] . $uuid . '.json';
+                if (file_exists($f) || UR_exists($f)) { //Путь это файл или URL? Существует ли нужный нам файл?
+                    $fileContent = file_get_contents($f);
+                    $js = json_decode($fileContent, true);
+                    $cached_stats[] = $js;
+                }
+            }
+        }
+    }
+
+    foreach ($server_array as $key => $dirStat) {
+        foreach ($cached_stats as $server_stat) {
+            $stat = $dirStat[1] ? $quests[$statKEY]['jsNameV2'] : $quests[$statKEY]['jsNameV1'];//Поддержка старых верий статистики
+            if (isset($server_stat[$stat])) {
+                $result += $server_stat[$stat];
+            }
+        }
+    }
     return $result;
 }
-function UR_exists($url){
-    $headers=get_headers($url);
-    return stripos($headers[0],"200 OK")?true:false;
+
+function UR_exists($url)
+{
+    if (filter_var($url, FILTER_VALIDATE_URL)) {
+        $headers=get_headers($url);
+        return stripos($headers[0], "200 OK") ? true : false;
+    }
+    return false;
 }
+
 function questsDisplay()
 {
     global $quests, $mysqli, $db_pref;
     $username = getUsername();
+    $uuid = getUUID($username);
     $result = '';
     $i = 0;
-    $q = "SELECT * FROM `".$db_pref."_everydayQuests` WHERE `user` = '".$username."'";
+    $q = "SELECT * FROM `".$db_pref."_everydayQuests` WHERE `uuid` = '".$uuid."'";
     $query = mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
     while ($res = mysqli_fetch_array($query)) {
         $js = unserialize($res['quest']);
@@ -219,30 +243,34 @@ function getBonuces($id)
     $id = mysqli_real_escape_string($mysqli, htmlspecialchars($id));
 
     $username = getUsername();
+    $uuid = getUUID($username);
     $userid = getUserID();
     $q = "SELECT * FROM `".$db_pref."_everydayQuests` WHERE `id` = '".$id."'";
     $query = mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
     $res = mysqli_fetch_array($query);
+    if (count((array)$res) <= 0) {
+        return;
+    }
+
     $today = date("d.m.Y");
     $js = unserialize($res['quest']);
     $statV = getStat($js['qkey'], $username);
     $ammount = $statV - $res['value'];
     if ($ammount >= $res['ammount'] && isset($res['ammount'])) {
-        $q = "INSERT INTO `".$db_pref."_everydayQuests_history`(`user`, `info`, `date`) VALUES ('".$username."','".$res['quest']."','".$today."')";
+        $q = "INSERT INTO `".$db_pref."_everydayQuests_history`(`uuid`, `info`, `date`) VALUES ('".$uuid."','".$res['quest']."','".$today."')";
         mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
 
         $q = "DELETE FROM `".$db_pref."_everydayQuests` WHERE `id`=".$id.";";
         mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q . '<br>' . mysql_error());
         $q = "UPDATE `".$db_bonuce_table."` SET `".$db_bonuce_column."`=`".$db_bonuce_column."`+".$js['bonuceAmmount']." WHERE `".$db_assoc_bonuce."` = ".$userid;
         mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q . '<br>' . mysql_error());
-
-        $q = "SELECT * FROM `".$db_pref."_top` WHERE `name` = '".$username."'";
+        $q = "SELECT * FROM `".$db_pref."_top` WHERE `uuid` = '".$uuid."'";
         $sql = mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q . '<br>' . mysql_error());
         $val = mysqli_num_rows($sql);
         if ($val == 0) {//Запись в ТОП!
-            $q = "INSERT INTO `".$db_pref."_top`(`name`, `num_q`, `num_money`) VALUES ('".$username."', 1, ".$js['bonuceAmmount'].")";
+            $q = "INSERT INTO `".$db_pref."_top`(`uuid`, `num_q`, `num_money`) VALUES ('".$uuid."', 1, ".$js['bonuceAmmount'].")";
         } else {
-            $q = "UPDATE `".$db_pref."_top` SET `num_q`=`num_q`+1, `num_money`=`num_money`+".$js['bonuceAmmount']." WHERE `name` = '".$username."'";
+            $q = "UPDATE `".$db_pref."_top` SET `num_q`=`num_q`+1, `num_money`=`num_money`+".$js['bonuceAmmount']." WHERE `uuid` = '".$uuid."'";
         }
         mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q . '<br>' . mysql_error());
     }
@@ -257,8 +285,9 @@ function questsUpdate()
     $t = 0;
     $id = getUserID();
     $username = getUsername();
-    $q = "SELECT * FROM `".$db_pref."_everydayQuests_history` WHERE `user` = '".$username."' AND `date` = '".$today."'";
-    $qL = "SELECT * FROM `".$db_pref."_everydayQuests` WHERE `user` = '".$username."'";
+    $uuid = getUUID($username);
+    $q = "SELECT * FROM `".$db_pref."_everydayQuests_history` WHERE `uuid` = '".$uuid."' AND `date` = '".$today."'";
+    $qL = "SELECT * FROM `".$db_pref."_everydayQuests` WHERE `uuid` = '".$uuid."'";
     $query = mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
     $queryL = mysqli_query($mysqli, $qL)or die('Ашипка MySQL<br>' . $qL);
     $numQ = mysqli_num_rows($query);
@@ -288,7 +317,7 @@ function questsUpdate()
                 if (!$coincidence && $numR < $questsLimit) {
                     $numR++;
                     $quests[$array_key]['qkey'] = $array_key;
-                    $q = "INSERT INTO `".$db_pref."_everydayQuests`(`user`, `user_id`, `uuid`, `quest`, `ammount`, `value`) VALUES ('".$username."','".$id."','".getUUID($username)."','".serialize($quests[$array_key])."',".$quests[$array_key]['ammount'].",".getStat($array_key, $username).")";
+                    $q = "INSERT INTO `".$db_pref."_everydayQuests`(`user`, `user_id`, `uuid`, `quest`, `ammount`, `value`) VALUES ('".$username."','".$id."','".$uuid."','".serialize($quests[$array_key])."',".$quests[$array_key]['ammount'].",".getStat($array_key, $username).")";
                     mysqli_query($mysqli, $q)or die('Ашипка MySQL<br>' . $q);
                 }
             }
